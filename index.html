@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Marks Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link href="styles.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header class="smf"><b>Student Marks Form</b></header>
+        <div class="row">
+            <div class="col-lg-4">
+               <section class="formsection">
+                <form id="marksform" class="bg-dark">
+                    <label for="first_name">First Name :</label>
+                    <input type="text" id="first_name" name="first_name" placeholder="Enter first name" required>
+                    <p id="err_first_name" class="errMsg"></p>
+                   
+
+                    <label for="last_name">Last Name :</label>
+                    <input type="text" id="last_name" name="last_name" placeholder="Enter last name" required>
+                    <p id="err_last_name" class="errMsg"></p>
+                    
+
+                    <label for="sub_1">Subject 1 :</label>
+                    <input type="number" id="sub_1" name="sub_1" placeholder="Marks of Maths" required />
+                    <p id="err_sub_1" class="errMsg"></p>
+                    
+
+                    <label for="sub_2">Subject 2 :</label>
+                    <input type="number" id="sub_2" name="sub_2" placeholder="Marks of Physics" required />
+                    <p id="err_sub_2" class="errMsg"></p>
+                    
+
+                    <label for="sub_3">Subject 3 :</label>
+                    <input type="number" id="sub_3" name="sub_3" placeholder="Marks of Chemistry" required />
+                    <p id="err_sub_3" class="errMsg"></p>
+                    <br>
+
+                    <button type="button" class="btn btn-primary submit">Submit</button>
+                </form>
+               </section>
+            </div>
+
+            <div class="col-lg-8">
+                <table class="markstable table table-striped caption-bottom">
+                    <caption class="caption">Student's mid semester examination marks</caption>
+                    <thead class="table-dark">
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Maths</th>
+                            <th>Physics</th>
+                            <th>Chemistry</th>
+                            <th>Total Marks</th>
+                            <th>Average</th>
+                            <th colspan="2">Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tablebody">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            function validate() {
+                $(".errMsg").html("");
+                const data = {};
+                let is_err = false;
+                ["first_name", "last_name", "sub_1", "sub_2", "sub_3"].forEach((element) => {
+                    const value = $(`#${element}`).val().trim();
+                    if (!value) {
+                        is_err = true;
+                        $(`#err_${element}`).html("This field is required");
+                    } else if (element.startsWith("sub_") && (parseInt(value) < 0 || parseInt(value) > 100)) {
+                        is_err = true;
+                        $(`#err_${element}`).html("Marks should be between 0 to 100");
+                    }
+                    data[element] = value;
+                });
+
+                return { is_err, data };
+            }
+
+            function saveData() {
+                const table_body = $("#tablebody");
+                const storedData = JSON.parse(localStorage.getItem("studentData"));
+
+                table_body.empty();
+
+                storedData.forEach((row, index) => {
+                    const newrow = $("<tr>").append(
+                        $("<td>").text(row.first_name),
+                        $("<td>").text(row.last_name),
+                        $("<td>").text(row.sub_1),
+                        $("<td>").text(row.sub_2),
+                        $("<td>").text(row.sub_3),
+                        $("<td>").text(row.total),
+                        $("<td>").text(row.avg.toFixed(2)),
+                        $("<td>").html(`<button class="btn btn-warning edit-btn">Edit</button>`),
+                        $("<td>").html(`<button class="btn btn-danger delete-btn">Delete</button>`)
+                    );
+
+                    table_body.append(newrow);
+                });
+            }
+
+            saveData();
+
+            $("#tablebody").on("click", ".edit-btn", function () {
+                const rowIndex = $(this).closest("tr").index();
+                const storedData = JSON.parse(localStorage.getItem("studentData"));
+                const dataToEdit = storedData[rowIndex];
+                updateTableData(dataToEdit, rowIndex);
+            });
+
+            $("#tablebody").on("click", ".delete-btn", function () {
+                const rowIndex = $(this).closest("tr").index();
+                const storedData = JSON.parse(localStorage.getItem("studentData"));
+                storedData.splice(rowIndex, 1); 
+                localStorage.setItem("studentData", JSON.stringify(storedData));
+                saveData(); 
+            });
+
+            function updateTableData(data, index) {
+                $("#first_name").val(data.first_name);
+                $("#last_name").val(data.last_name);
+                $("#sub_1").val(data.sub_1);
+                $("#sub_2").val(data.sub_2);
+                $("#sub_3").val(data.sub_3);
+
+                $("#marksform").data("editingIndex", index);
+            }
+
+            $(".submit").on("click", function () {
+                const { is_err, data } = validate();
+                if (is_err) {
+                    return false;
+                }
+
+                const { first_name, last_name, sub_1, sub_2, sub_3 } = data;
+                const total = parseInt(sub_1) + parseInt(sub_2) + parseInt(sub_3);
+                const avg = total / 3;
+
+                const storedData = JSON.parse(localStorage.getItem("studentData"));
+                const newData = {
+                    first_name,
+                    last_name,
+                    sub_1,
+                    sub_2,
+                    sub_3,
+                    total,
+                    avg
+                };
+
+                const editingIndex = $("#marksform").data("editingIndex");
+
+                if (editingIndex !== undefined) {
+                    storedData[editingIndex] = newData;
+                } else {
+                    storedData.push(newData);
+                }
+
+                localStorage.setItem("studentData", JSON.stringify(storedData));
+
+                saveData();
+
+                $("#marksform")[0].reset();
+                $("#marksform").removeData("editingIndex");
+            });
+        });
+    </script>
+</body>
+
+</html>
